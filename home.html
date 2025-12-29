@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sindhura TV – Dashboard</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+<style>
+:root{
+  --primary:#9b1c1c;
+  --success:#16a34a;
+  --warning:#f59e0b;
+  --danger:#dc2626;
+  --bg:#f6eeee;
+  --card:#fff;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter;background:var(--bg)}
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+
+/* Sidebar */
+.sidebar{
+  background:linear-gradient(180deg,#9b1c1c,#7a1414);
+  color:#fff;padding:26px
+}
+.sidebar h1{margin:0 0 30px}
+.sidebar button{
+  width:100%;margin-bottom:12px;
+  padding:14px;border:none;border-radius:14px;
+  background:rgba(255,255,255,.15);
+  color:#fff;font-size:14px;cursor:pointer;
+  text-align:left;
+  
+}
+
+/* Main */
+.main{padding:30px}
+
+/* Cards */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.card{
+  background:var(--card);padding:22px;border-radius:20px;
+  box-shadow:0 10px 25px rgba(0,0,0,.1)
+}
+.card h3{margin:0;color:#6b7280;font-size:14px}
+.card p{margin:10px 0 0;font-size:28px;font-weight:700}
+
+/* Charts */
+.charts{margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+
+@media(max-width:900px){
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .charts{grid-template-columns:1fr}
+}
+
+.logout{
+  margin-top:30px;
+  background:rgba(0,0,0,.25) !important;
+  border:1px solid rgba(255,255,255,.3);
+}
+
+.logout:hover{
+  background:#dc2626 !important;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <h1>Sindhura TV</h1>
+  <button onclick="go('home.html')">📊 Dashboard</button>
+  <button onclick="go('newcustomer.html')">➕ Add Customer</button>
+  <button onclick="go('customer.html')">👥 Customers</button>
+  <button onclick="go('payment.html')">💳 Payments</button>
+  <button onclick="go('history.html')">📜 History</button>
+ <button onclick="go('bill-settings.html')">⚙️ Settings</button>
+     <button class="logout" onclick="logout()">🚪 Logout</button>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- CARDS -->
+<section class="cards">
+  <div class="card">
+    <h3>Total Amount</h3>
+    <p id="totalAmount">₹0</p>
+  </div>
+  <div class="card">
+    <h3>Paid Amount</h3>
+    <p id="paidAmount">₹0</p>
+  </div>
+  <div class="card">
+    <h3>Balance Amount</h3>
+    <p id="balanceAmount">₹0</p>
+  </div>
+  <div class="card">
+    <h3>Total Customers</h3>
+    <p id="totalCustomers">0</p>
+  </div>
+</section>
+
+<!-- CHARTS -->
+<section class="charts">
+  <div class="card">
+    <h3>Amount Overview</h3>
+    <canvas id="barChart"></canvas>
+  </div>
+  <div class="card">
+    <h3>Payment Distribution</h3>
+    <canvas id="pieChart"></canvas>
+  </div>
+</section>
+
+</main>
+</div>
+
+<script>
+/* FIREBASE INIT – ONLY ONCE */
+firebase.initializeApp({
+  apiKey: "AIzaSyD80rGSiaQD5PiFQfZokB7QueEEyORD57w",
+  authDomain: "new-customer-e3c48.firebaseapp.com",
+  databaseURL: "https://new-customer-e3c48-default-rtdb.firebaseio.com",
+  projectId: "new-customer-e3c48"
+});
+
+const customersRef = firebase.database().ref("customers");
+
+/* MONTH CALCULATOR */
+function monthsFrom(join){
+  const s = new Date(join);
+  const n = new Date();
+  return (n.getFullYear()-s.getFullYear())*12 + (n.getMonth()-s.getMonth()) + 1;
+}
+
+let TOTAL=0, PAID=0, BAL=0;
+
+/* LOAD DASHBOARD DATA */
+customersRef.once("value", snap=>{
+  let count = snap.numChildren();
+
+  snap.forEach(c=>{
+    const v = c.val();
+    const months = monthsFrom(v.joiningMonth);
+    const total = months * Number(v.amount||0);
+    const paid = Number(v.paid||0);
+
+    TOTAL += total;
+    PAID += paid;
+  });
+
+  BAL = TOTAL - PAID;
+
+  totalAmount.innerText = "₹"+TOTAL;
+  paidAmount.innerText = "₹"+PAID;
+  balanceAmount.innerText = "₹"+BAL;
+  totalCustomers.innerText = count;
+
+  drawCharts();
+});
+
+/* CHARTS */
+function drawCharts(){
+
+  new Chart(barChart,{
+    type:'bar',
+    data:{
+      labels:['Total','Paid','Balance'],
+      datasets:[{
+        data:[TOTAL,PAID,BAL],
+        backgroundColor:['#9b1c1c','#16a34a','#f59e0b']
+      }]
+    },
+    options:{plugins:{legend:{display:false}}}
+  });
+
+  new Chart(pieChart,{
+    type:'pie',
+    data:{
+      labels:['Paid','Balance'],
+      datasets:[{
+        data:[PAID,BAL],
+        backgroundColor:['#22c55e','#ef4444']
+      }]
+    }
+  });
+}
+
+</script>
+<script>
+function go(page){
+  window.location.href = page;
+}
+
+function logout(){
+  swal({
+    title: "Logout Confirmation",
+    text: "Do you really want to logout?",
+    icon: "warning",
+    buttons: ["Cancel", "Logout"],
+    dangerMode: true,
+  }).then((willLogout) => {
+    if (willLogout) {
+      localStorage.removeItem("loggedIn");
+
+      swal({
+        title: "Logged Out ✅",
+        text: "You have been logged out successfully",
+        icon: "success",
+        button: "OK",
+      }).then(() => {
+        window.location.href = "login.html";
+      });
+    }
+  });
+}
+</script>
+ 
+
+
+</body>
+</html>

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sindhura TV – Monthly Report</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+<style>
+:root{
+  --primary:#9b1c1c;
+  --primary-dark:#7a1414;
+  --bg:#f6eeee;
+  --card:#ffffff;
+  --border:#e5e7eb;
+  --text:#1f2937;
+  --muted:#6b7280;
+  --success:#16a34a;
+  --danger:#dc2626;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter;
+  background:var(--bg);
+}
+.app{
+  display:grid;
+  grid-template-columns:260px 1fr;
+  min-height:100vh;
+}
+
+/* SIDEBAR */
+.sidebar{
+  background:linear-gradient(180deg,var(--primary),var(--primary-dark));
+  color:#fff;
+  padding:26px;
+}
+.sidebar h1{margin-bottom:30px}
+.sidebar button{
+  width:100%;
+  margin-bottom:12px;
+  padding:14px;
+  border:none;
+  border-radius:14px;
+  background:rgba(255,255,255,.15);
+  color:#fff;
+  text-align:left;
+  cursor:pointer;
+}
+
+/* MAIN */
+.main{padding:30px}
+
+/* HEADER */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+.header h2{margin:0}
+.header input{
+  padding:10px 14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+}
+
+/* CARDS */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:18px;
+  margin-bottom:26px;
+}
+.card{
+  background:var(--card);
+  padding:22px;
+  border-radius:20px;
+  box-shadow:0 12px 30px rgba(0,0,0,.08);
+}
+.card h4{
+  margin:0;
+  font-size:13px;
+  color:var(--muted);
+}
+.card p{
+  margin-top:8px;
+  font-size:22px;
+  font-weight:700;
+}
+
+/* TABLE */
+.table-wrap{
+  background:#fff;
+  border-radius:22px;
+  overflow:hidden;
+  box-shadow:0 14px 30px rgba(0,0,0,.08);
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  padding:14px 16px;
+  font-size:14px;
+}
+thead{
+  background:#f3d6d6;
+}
+th{color:#7a1414;text-align:left}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border:none}
+
+/* STATUS */
+.badge{
+  padding:6px 14px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:600;
+}
+.paid{background:#dcfce7;color:#166534}
+.due{background:#fee2e2;color:#991b1b}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .cards{grid-template-columns:repeat(2,1fr)}
+}
+
+/* Tabs */
+.tabs{display:flex;gap:10px;margin-bottom:14px}
+.tabs button{
+  padding:10px 18px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#fff;
+  cursor:pointer;
+}
+.tabs button.active{background:var(--primary);color:#fff}
+
+/* Toolbar */
+.toolbar{display:flex;gap:12px;margin-bottom:16px}
+.toolbar input,.toolbar select{
+  padding:12px 16px;
+  border-radius:12px;
+  border:1px solid var(--border);
+}
+.logout{
+  margin-top:30px;
+  background:rgba(0,0,0,.25) !important;
+  border:1px solid rgba(255,255,255,.3);
+}
+
+.logout:hover{
+  background:#dc2626 !important;
+}
+</style>
+</head>
+
+<body>
+  <script>
+function go(page){
+  window.location.href = page;
+}
+
+function logout(){
+  swal({
+    title: "Logout Confirmation",
+    text: "Do you really want to logout?",
+    icon: "warning",
+    buttons: ["Cancel", "Logout"],
+    dangerMode: true,
+  }).then((willLogout) => {
+    if (willLogout) {
+      localStorage.removeItem("loggedIn");
+
+      swal({
+        title: "Logged Out ✅",
+        text: "You have been logged out successfully",
+        icon: "success",
+        button: "OK",
+      }).then(() => {
+        window.location.href = "login.html";
+      });
+    }
+  });
+}
+</script>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <h1>Sindhura TV</h1>
+  <button onclick="go('home.html')">📊 Dashboard</button>
+  <button onclick="go('newcustomer.html')">➕ Add Customer</button>
+  <button onclick="go('customer.html')">👥 Customers</button>
+  <button onclick="go('payment.html')">💳 Payments</button>
+  <button onclick="go('history.html')">📜 History</button>
+  <button class="settings" onclick="go('bill-settings.html')">
+      ⚙️ <span>Settings</span>
+    </button>
+     <button class="logout" onclick="logout()">🚪 Logout</button>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+<div class="header">
+  <h2>📅 Monthly Report</h2>
+  <input type="month" id="reportMonth" onchange="loadReport()">
+</div>
+
+<!-- SUMMARY -->
+<section class="cards">
+  <div class="card">
+    <h4>Total Amount</h4>
+    <p id="totalAmount">₹0</p>
+  </div>
+  <div class="card">
+    <h4>Paid Amount</h4>
+    <p id="paidAmount">₹0</p>
+  </div>
+  <div class="card">
+    <h4>Balance Amount</h4>
+    <p id="balanceAmount">₹0</p>
+  </div>
+  <div class="card">
+    <h4>Customers</h4>
+    <p id="customerCount">0</p>
+  </div>
+</section>
+
+<div class="tabs">
+  <button class="active" onclick="setFilter('all',this)">All</button>
+  <button onclick="setFilter('paid',this)">Paid</button>
+  <button onclick="setFilter('due',this)">Pending</button>
+</div>
+
+<div class="toolbar">
+  <input placeholder="Search by name or box no" oninput="searchCustomer(this.value)">
+  <select onchange="filterArea(this.value)">
+    <option value="all">All Areas</option>
+    <option value="Area 1">Area 1</option>
+    <option value="Area 2">Area 2</option>
+    <option value="Area 3">Area 3</option>
+  </select>
+</div>
+
+<!-- TABLE -->
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+  <th>Name</th>
+  <th>Mobile</th>
+  <th>Box No</th>
+  <th>Area</th>
+  <th>Joining</th>
+  <th>Monthly</th>
+  <th>Total</th>
+  <th>Paid</th>
+  <th>Balance</th>
+  <th>Status</th>
+  <th>Actions</th>
+
+</tr>
+</thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+
+</main>
+</div>
+ 
+<script>
+function go(p){ location.href = p }
+
+/* ELEMENTS */
+const reportMonth = document.getElementById("reportMonth");
+const rows = document.getElementById("rows");
+const totalAmount = document.getElementById("totalAmount");
+const paidAmount = document.getElementById("paidAmount");
+const balanceAmount = document.getElementById("balanceAmount");
+const customerCount = document.getElementById("customerCount");
+
+/* FIREBASE */
+firebase.initializeApp({
+  apiKey: "AIzaSyD80rGSiaQD5PiFQfZokB7QueEEyORD57w",
+  authDomain: "new-customer-e3c48.firebaseapp.com",
+  databaseURL: "https://new-customer-e3c48-default-rtdb.firebaseio.com",
+  projectId: "new-customer-e3c48"
+});
+
+const customersRef = firebase.database().ref("customers");
+
+/* MONTH DIFFERENCE */
+function monthDiff(start, end){
+  const s = new Date(start);
+  const e = new Date(end);
+  return (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth()) + 1;
+}
+
+/* LOAD REPORT */
+function loadReport(){
+  const m = reportMonth.value;
+  if(!m) return;
+
+  let TOTAL = 0, PAID = 0, COUNT = 0;
+  rows.innerHTML = "";
+
+  customersRef.once("value", snap => {
+    snap.forEach(c => {
+      const v = c.val();
+      if(!v.joiningMonth || v.joiningMonth > m) return;
+
+      const monthly = Number(v.amount || 0);
+      const months = monthDiff(v.joiningMonth, m);
+      const total = months * monthly;
+      const paid = Number(v.paid || 0);
+      const bal = total - paid;
+      const status = bal <= 0 ? "paid" : "due";
+
+      TOTAL += total;
+      PAID += paid;
+      COUNT++;
+
+      rows.innerHTML += `
+        <tr
+          data-status="${status}"
+          data-name="${(v.name || '').toLowerCase()}"
+          data-box="${v.boxno || ''}"
+          data-area="${v.center || ''}"
+        >
+          <td>${v.name || "-"}</td>
+          <td>${v.mobile || "-"}</td>
+          <td>${v.boxno || "-"}</td>
+          <td>${v.center || "-"}</td>
+          <td>${v.joiningMonth || "-"}</td>
+          <td>₹${monthly}</td>
+          <td>₹${total}</td>
+          <td>₹${paid}</td>
+          <td>₹${bal}</td>
+          <td><span class="badge ${status}">${status.toUpperCase()}</span></td>
+         <td>
+  <button onclick="editCustomer('${c.key}')" style="margin-right:6px">✏️</button>
+  <button onclick="deleteCustomer('${c.key}')" style="margin-right:6px">🗑</button>
+  <button onclick="go('payment.html?boxno=${v.boxno}')">💳</button>
+</td>
+
+        </tr>
+      `;
+    });
+
+    totalAmount.innerText = "₹" + TOTAL;
+    paidAmount.innerText = "₹" + PAID;
+    balanceAmount.innerText = "₹" + (TOTAL - PAID);
+    customerCount.innerText = COUNT;
+
+    applyFilters(); // apply active filters
+  });
+}
+
+/* FILTERS */
+let currentStatus = "all";
+let currentArea = "all";
+let searchText = "";
+
+function setFilter(status, btn){
+  currentStatus = status;
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  applyFilters();
+}
+
+function searchCustomer(val){
+  searchText = val.toLowerCase();
+  applyFilters();
+}
+
+function filterArea(area){
+  currentArea = area;
+  applyFilters();
+}
+
+function applyFilters(){
+  document.querySelectorAll("#rows tr").forEach(r => {
+    const s = r.dataset.status;
+    const n = r.dataset.name;
+    const b = r.dataset.box;
+    const a = r.dataset.area;
+
+    let show = true;
+
+    if(currentStatus !== "all" && s !== currentStatus) show = false;
+    if(currentArea !== "all" && a !== currentArea) show = false;
+    if(searchText && !n.includes(searchText) && !b.includes(searchText)) show = false;
+
+    r.style.display = show ? "" : "none";
+  });
+}
+
+/* DEFAULT MONTH */
+reportMonth.value = new Date().toISOString().slice(0,7);
+
+swal({
+  title: "Report Loaded 📊",
+  text: "Monthly report generated successfully",
+  icon: "success",
+  timer: 1200,
+  buttons: false
+});
+
+loadReport();
+</script>
+<script>
+function deleteCustomer(id){
+  swal({
+    title: "Are you sure?",
+    text: "Customer will be permanently deleted!",
+    icon: "warning",
+    buttons: ["Cancel", "Yes, Delete"],
+    dangerMode: true,
+  }).then((willDelete) => {
+    if (willDelete) {
+      firebase.database().ref("customers/" + id).remove()
+        .then(() => {
+          swal("Deleted!", "Customer removed successfully.", "success");
+          loadReport();
+        })
+        .catch(() => {
+          swal("Error!", "Unable to delete customer.", "error");
+        });
+    }
+  });
+}
+</script>
+<script>
+function editCustomer(id){
+  swal({
+    title: "Edit Customer",
+    text: "Do you want to edit this customer?",
+    icon: "info",
+    buttons: ["Cancel", "Edit"],
+  }).then((ok) => {
+    if(ok){
+      location.href = "edit.html?id=" + id;
+    }
+  });
+}
+</script>
+
+
+</body>
+</html>

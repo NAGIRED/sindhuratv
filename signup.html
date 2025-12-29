@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Create Admin</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+<style>
+body{
+  margin:0;height:100vh;display:flex;justify-content:center;align-items:center;
+  background:#f6eeee;font-family:Inter;
+}
+.card{
+  width:360px;background:#fff;padding:30px;border-radius:22px;
+  box-shadow:0 20px 40px rgba(0,0,0,.2);
+}
+input{
+  width:100%;padding:14px;margin-top:14px;
+  border-radius:14px;border:1px solid #ddd;
+}
+button{
+  width:100%;margin-top:20px;padding:14px;
+  background:#16a34a;color:#fff;border:none;border-radius:14px;
+}
+.msg{text-align:center;margin-top:10px;color:red;font-size:13px}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>Create Admin Account</h2>
+
+  <input id="email" value="nagir1090@gmail.com">
+  <input id="password" type="password" value="1234">
+
+  <button onclick="create()">✅ Create Account</button>
+  <div class="msg" id="msg"></div>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyD80rGSiaQD5PiFQfZokB7QueEEyORD57w",
+  authDomain:"new-customer-e3c48.firebaseapp.com"
+});
+
+function create(){
+  firebase.auth()
+    .createUserWithEmailAndPassword(email.value,password.value)
+    .then(()=>{
+      alert("✅ Account created successfully");
+      location.href="login.html";
+    })
+    .catch(e=>msg.innerText=e.message);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dish TV App</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#1f3f4a;
+  --card:#ffffff;
+  --primary:#64AD8F;
+  --accent:#2E5867;
+  --text:#1f2937;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Poppins',sans-serif;
+  background:linear-gradient(180deg,#2E5867,#1f3f4a);
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.app{
+  width:100%;
+  max-width:420px;
+  min-height:90vh;
+  background:#f4f7f8;
+  border-radius:28px;
+  overflow:hidden;
+  box-shadow:0 20px 40px rgba(0,0,0,.35);
+  display:flex;
+  flex-direction:column;
+}
+header{
+  background:linear-gradient(135deg,#64AD8F,#4b9b7c);
+  padding:28px 20px 36px;
+  text-align:center;
+  color:#fff;
+  border-radius:0 0 32px 32px;
+}
+header h1{margin:0;font-size:28px;font-weight:600;letter-spacing:.5px}
+header p{margin:6px 0 0;font-size:14px;opacity:.9}
+main{
+  padding:24px 18px 32px;
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:16px;
+}
+.card{
+  background:var(--card);
+  border-radius:20px;
+  padding:18px 14px;
+  text-align:center;
+  cursor:pointer;
+  box-shadow:0 8px 20px rgba(0,0,0,.08);
+  transition:.25s ease;
+}
+.card:hover{
+  transform:translateY(-6px);
+  box-shadow:0 14px 28px rgba(0,0,0,.18);
+}
+.icon{
+  width:56px;height:56px;
+  margin:0 auto 10px;
+  border-radius:16px;
+  background:#e6f2ed;
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;color:#2E5867;font-weight:600;
+}
+.card span{display:block;font-size:14px;font-weight:500;color:var(--text)}
+footer{
+  margin-top:auto;
+  padding:14px;
+  text-align:center;
+  font-size:12px;
+  color:#6b7280;
+}
+</style>
+</head>
+<body>
+<div class="app" role="main">
+  <header>
+    <h1>Dish TV</h1>
+    <p>Customer & Payment Manager</p>
+  </header>
+
+  <main>
+    <div class="card" data-link="customer.html">
+      <div class="icon">👥</div>
+      <span>Customer</span>
+    </div>
+    <div class="card" data-link="newcustomer.html">
+      <div class="icon">➕</div>
+      <span>New Customer</span>
+    </div>
+    <div class="card" data-link="collect.html">
+      <div class="icon">💰</div>
+      <span>Collect</span>
+    </div>
+    <div class="card" data-link="center.html">
+      <div class="icon">🏢</div>
+      <span>Center</span>
+    </div>
+    <div class="card" data-link="payment.html">
+      <div class="icon">💳</div>
+      <span>Payment</span>
+    </div>
+    <div class="card" data-link="search.html">
+      <div class="icon">🔍</div>
+      <span>Search</span>
+    </div>
+    <div class="card" data-link="delete.html">
+      <div class="icon">🗑️</div>
+      <span>Delete</span>
+    </div>
+  </main>
+
+  <footer>© 2025 Dish TV App</footer>
+</div>
+
+<script>
+  document.querySelectorAll('[data-link]').forEach(el=>{
+    el.addEventListener('click',()=>location.href=el.dataset.link)
+  })
+</script>
+</body>
+</html>

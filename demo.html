@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Payment History – Sindhura TV</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Inter;
+  background:#f6eeee;
+}
+.container{
+  padding:30px;
+}
+h2{margin-bottom:20px}
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+  border-radius:16px;
+  overflow:hidden;
+}
+th,td{
+  padding:12px 14px;
+  font-size:14px;
+  border-bottom:1px solid #eee;
+}
+thead{background:#f3d6d6}
+th{text-align:left;color:#7a1414}
+.badge{
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:600;
+}
+.paid{background:#dcfce7;color:#166534}
+.due{background:#fee2e2;color:#991b1b}
+.action-btn{
+  border:none;
+  padding:6px 10px;
+  border-radius:8px;
+  cursor:pointer;
+}
+.view{background:#2563eb;color:#fff}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>📜 Payment History</h2>
+
+<table>
+<thead>
+<tr>
+  <th>Name</th>
+  <th>Mobile</th>
+  <th>Box No</th>
+  <th>Area</th>
+  <th>Joining</th>
+  <th>Monthly</th>
+  <th>Total</th>
+  <th>Paid</th>
+  <th>Balance</th>
+  <th>Payment Date</th>
+  <th>Payment Mode</th>
+  <th>Status</th>
+  <th>Actions</th>
+</tr>
+</thead>
+
+<tbody id="rows"></tbody>
+</table>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyD80rGSiaQD5PiFQfZokB7QueEEyORD57w",
+  databaseURL:"https://new-customer-e3c48-default-rtdb.firebaseio.com"
+});
+
+const customersRef = firebase.database().ref("customers");
+const paymentsRef  = firebase.database().ref("payments");
+
+function monthDiff(join){
+  const s=new Date(join), n=new Date();
+  return (n.getFullYear()-s.getFullYear())*12+(n.getMonth()-s.getMonth())+1;
+}
+
+async function loadHistory(){
+  rows.innerHTML="";
+
+  /* Load all payments */
+  const paySnap = await paymentsRef.once("value");
+  const payments=[];
+  paySnap.forEach(p=>payments.push(p.val()));
+
+  customersRef.once("value",snap=>{
+    snap.forEach(ch=>{
+      const c = ch.val();
+
+      const months = monthDiff(c.joiningMonth);
+      const total  = months * Number(c.amount||0);
+
+      const custPays = payments.filter(p=>p.boxno===c.boxno);
+      const paid = custPays.reduce((s,p)=>s+Number(p.amount||0),0);
+
+      const lastPay = custPays.length
+        ? custPays.sort((a,b)=>new Date(b.date)-new Date(a.date))[0]
+        : {};
+
+      const bal = total-paid;
+
+      rows.innerHTML += `
+      <tr>
+        <td>${c.name}</td>
+        <td>${c.mobile || "-"}</td>
+        <td>${c.boxno}</td>
+        <td>${c.center}</td>
+        <td>${c.joiningMonth}</td>
+        <td>₹${c.amount}</td>
+        <td>₹${total}</td>
+        <td>₹${paid}</td>
+        <td>₹${bal}</td>
+        <td>${lastPay.date ? lastPay.date.slice(0,10) : "-"}</td>
+        <td>${lastPay.mode || "-"}</td>
+        <td>
+          <span class="badge ${bal<=0?'paid':'due'}">
+            ${bal<=0?'PAID':'DUE'}
+          </span>
+        </td>
+        <td>
+          <button class="action-btn view"
+            onclick="viewPayments('${c.boxno}')">View</button>
+        </td>
+      </tr>`;
+    });
+  });
+}
+
+function viewPayments(boxno){
+  location.href = "payment-history.html?boxno="+boxno;
+}
+
+loadHistory();
+</script>
+
+</body>
+</html>

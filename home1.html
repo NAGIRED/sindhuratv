@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Sindhura TV – Home</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Inter,system-ui;
+  background:#f6eeee;
+}
+
+/* HEADER */
+header{
+  background:#9b1c1c;
+  color:#fff;
+  padding:16px;
+  text-align:center;
+}
+
+.app-title{
+  font-size:18px;
+  font-weight:600;
+}
+
+.area{
+  font-size:13px;
+  margin-top:4px;
+  opacity:.9;
+}
+
+/* PAGE */
+.page{
+  padding:18px;
+}
+
+/* GRID */
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+/* CARD */
+.card{
+  background:#fff;
+  border-radius:20px;
+  padding:22px 14px;
+  text-align:center;
+  box-shadow:0 8px 22px rgba(0,0,0,.1);
+  cursor:pointer;
+  transition:.2s;
+}
+.card:active{
+  transform:scale(.97);
+}
+
+.icon{
+  font-size:34px;
+  margin-bottom:10px;
+}
+.title{
+  font-size:14px;
+  font-weight:600;
+  color:#333;
+}
+
+.full{
+  grid-column:1/3;
+  background:#ffecec;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="app-title">📺 Sindhura TV</div>
+  <div class="area" id="areaText"></div>
+</header>
+
+<div class="page">
+  <div class="grid">
+
+    <div class="card" onclick="go('newcustomer1.html')">
+      <div class="icon">➕</div>
+      <div class="title">New Customer</div>
+    </div>
+
+    <div class="card" onclick="go('customer1.html')">
+      <div class="icon">👥</div>
+      <div class="title">Customers</div>
+    </div>
+
+    <div class="card" onclick="go('payment1.html')">
+      <div class="icon">💳</div>
+      <div class="title">Payments</div>
+    </div>
+
+    <div class="card" onclick="go('history1.html')">
+      <div class="icon">📊</div>
+      <div class="title">Reports</div>
+    </div>
+
+    <div class="card full" onclick="logout()">
+      <div class="icon">🚪</div>
+      <div class="title">Logout</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* LOGIN CHECK */
+if(!localStorage.getItem("loggedIn")){
+  swal("Session Expired", "Please login again", "warning")
+    .then(()=>window.location.href="login1.html");
+}
+
+/* SHOW AREA */
+const area = localStorage.getItem("userArea");
+document.getElementById("areaText").innerText =
+  area ? `Logged in : ${area}` : "";
+
+/* NAVIGATION */
+function go(page){
+  window.location.href = page;
+}
+
+/* LOGOUT WITH SWEET ALERT */
+function logout(){
+  swal({
+    title: "Logout?",
+    text: "Do you want to logout from Sindhura TV?",
+    icon: "warning",
+    buttons: ["Cancel", "Logout"],
+    dangerMode: true
+  }).then((ok)=>{
+    if(ok){
+      localStorage.clear();
+      swal("Logged Out ✅","You have been logged out","success")
+        .then(()=>window.location.href="login1.html");
+    }
+  });
+}
+</script>
+
+</body>
+</html>

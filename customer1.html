@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Customers</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+<style>
+:root{
+  --primary:#1f7a63;
+  --danger:#d32f2f;
+  --success:#2e7d32;
+  --card:#ffffff;
+  --muted:#6b7280;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Poppins,system-ui;
+  background:linear-gradient(160deg,#0f3d3e,#1f7a63);
+  min-height:100vh;
+}
+
+/* App */
+.app{
+  max-width:430px;
+  margin:auto;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+/* Header */
+.header{
+  padding:20px 16px;
+  color:#fff;
+}
+.header h1{
+  margin:0;
+  font-size:20px;
+}
+.header p{
+  margin:4px 0 0;
+  font-size:12px;
+  opacity:.9;
+}
+
+/* List */
+.list{
+  flex:1;
+  padding:14px;
+}
+
+/* Card */
+.card{
+  background:var(--card);
+  border-radius:18px;
+  padding:16px;
+  margin-bottom:14px;
+  box-shadow:0 10px 28px rgba(0,0,0,.18);
+}
+
+/* Card Header */
+.card-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.card-header h2{
+  font-size:16px;
+  margin:0;
+}
+
+/* Status */
+.status{
+  font-size:11px;
+  padding:5px 10px;
+  border-radius:14px;
+  color:#fff;
+  font-weight:600;
+}
+.paid{background:var(--success)}
+.due{background:var(--danger)}
+
+/* Info */
+.info{
+  margin-top:10px;
+  font-size:13px;
+  line-height:1.6;
+}
+
+/* Amounts */
+.amounts{
+  display:flex;
+  justify-content:space-between;
+  margin-top:12px;
+}
+.amount{
+  text-align:center;
+  flex:1;
+}
+.amount span{
+  font-size:11px;
+  color:var(--muted);
+}
+.amount strong{
+  display:block;
+  font-size:14px;
+}
+
+/* Actions */
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top:14px;
+}
+.actions button{
+  flex:1;
+  padding:10px;
+  border-radius:14px;
+  border:none;
+  font-size:13px;
+}
+.pay{background:var(--primary);color:#fff}
+
+/* Nav */
+.nav{
+  display:flex;
+  background:#fff;
+  border-top:1px solid #ddd;
+}
+.nav button{
+  flex:1;
+  border:none;
+  padding:14px;
+  font-size:14px;
+  background:none;
+}
+
+/* Empty */
+.empty{
+  color:#fff;
+  text-align:center;
+  margin-top:40px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<header class="header">
+  <h1>👥 Customers</h1>
+  <p id="areaText"></p>
+</header>
+
+<div class="nav">
+  <button onclick="location.href='home1.html'">🏠 Home</button>
+</div>
+
+<section class="list" id="customerList"></section>
+
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+/* 🔐 LOGIN CHECK */
+if(!localStorage.getItem("loggedIn")){
+  swal("Session Expired","Please login again","warning")
+    .then(()=>location.href="login.html");
+}
+
+/* 🌍 USER AREA */
+const userArea = localStorage.getItem("userArea");
+if(!userArea){
+  swal("Error","Area not found. Login again.","error")
+    .then(()=>location.href="login.html");
+}
+
+document.getElementById("areaText").innerText = "Area : " + userArea;
+
+/* FIREBASE */
+firebase.initializeApp({
+  apiKey: "AIzaSyD80rGSiaQD5PiFQfZokB7QueEEyORD57w",
+  databaseURL: "https://new-customer-e3c48-default-rtdb.firebaseio.com"
+});
+
+const list = document.getElementById("customerList");
+const ref = firebase.database().ref("customers");
+
+/* MONTH CALC */
+function monthsFrom(join){
+  const s=new Date(join), n=new Date();
+  return (n.getFullYear()-s.getFullYear())*12+(n.getMonth()-s.getMonth())+1;
+}
+
+/* LOAD CUSTOMERS (AREA FILTER) */
+ref.once("value",snap=>{
+  let found=false;
+
+  snap.forEach(ch=>{
+    const c=ch.val();
+
+    if(c.status==="inactive") return;
+    if(c.center !== userArea) return; // 🔒 AREA FILTER
+
+    found=true;
+
+    const months=monthsFrom(c.joiningMonth);
+    const total=months*Number(c.amount);
+    const paid=Number(c.paid||0);
+    const balance=total-paid;
+    const status=balance<=0?"paid":"due";
+
+    list.innerHTML+=`
+      <div class="card">
+        <div class="card-header">
+          <h2>${c.name}</h2>
+          <span class="status ${status}">${status.toUpperCase()}</span>
+        </div>
+
+        <div class="info">
+          📦 Box: <b>${c.boxno}</b><br>
+          📅 Joined: ${c.joiningMonth}<br>
+          ⏱ ${months} months
+        </div>
+
+        <div class="amounts">
+          <div class="amount">
+            <span>Total</span>
+            <strong>₹${total}</strong>
+          </div>
+          <div class="amount">
+            <span>Paid</span>
+            <strong>₹${paid}</strong>
+          </div>
+          <div class="amount">
+            <span>Balance</span>
+            <strong>₹${balance}</strong>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="pay"
+            onclick="location.href='payment1.html?boxno=${c.boxno}'">
+            💳 Pay
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  if(!found){
+    list.innerHTML = `<div class="empty">No customers in ${userArea}</div>`;
+  }
+});
+</script>
+
+</body>
+</html>

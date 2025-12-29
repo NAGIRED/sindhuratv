@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Record Payment – Sindhura TV</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<style>
+:root{
+  --primary:#9b1c1c;
+  --bg:#f6eeee;
+  --card:#ffffff;
+  --border:#e5e7eb;
+  --muted:#6b7280;
+  --success:#16a34a;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Inter;
+  background:var(--bg);
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.card{
+  background:var(--card);
+  width:100%;
+  max-width:460px;
+  border-radius:22px;
+  padding:26px;
+  box-shadow:0 20px 50px rgba(0,0,0,.15);
+}
+
+h1{
+  margin:0 0 18px;
+  font-size:22px;
+}
+
+.info{
+  background:#f9fafb;
+  border-radius:14px;
+  padding:14px;
+  font-size:14px;
+  line-height:1.7;
+  margin-bottom:18px;
+}
+
+.amounts{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-bottom:18px;
+}
+
+.box{
+  background:#f3f4f6;
+  border-radius:14px;
+  padding:12px;
+  text-align:center;
+}
+.box span{
+  display:block;
+  font-size:12px;
+  color:var(--muted);
+}
+.box strong{
+  font-size:16px;
+}
+
+label{
+  font-size:13px;
+  color:var(--muted);
+  display:block;
+  margin-bottom:6px;
+}
+
+input, select{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  font-size:15px;
+  margin-bottom:16px;
+  background:#fff;
+  appearance:none;
+}
+
+/* Custom select arrow */
+.select-wrap{
+  position:relative;
+}
+.select-wrap::after{
+  content:"▼";
+  position:absolute;
+  right:16px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:12px;
+  color:#6b7280;
+  pointer-events:none;
+}
+
+.actions{
+  display:flex;
+  gap:12px;
+}
+
+button{
+  flex:1;
+  padding:14px;
+  border-radius:16px;
+  border:none;
+  cursor:pointer;
+  font-size:15px;
+}
+
+.save{
+  background:var(--primary);
+  color:#fff;
+}
+
+.back{
+  background:#f3f4f6;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h1>Record Payment</h1>
+
+  <div class="info" id="info">Loading customer...</div>
+
+  <div class="amounts">
+    <div class="box">
+      <span>Total</span>
+      <strong id="total">₹0</strong>
+    </div>
+    <div class="box">
+      <span>Paid</span>
+      <strong id="paid">₹0</strong>
+    </div>
+    <div class="box">
+      <span>Balance</span>
+      <strong id="balance">₹0</strong>
+    </div>
+  </div>
+
+  <label>Payment Month</label>
+  <input type="month" id="payMonth">
+
+  <label>Payment Amount</label>
+  <input type="number" id="payAmount" placeholder="Enter amount">
+
+  <label>Payment Mode</label>
+  <div class="select-wrap">
+    <select id="payMode">
+      <option value="">Select payment mode</option>
+      <option value="Cash">Cash</option>
+      <option value="UPI">UPI</option>
+      <option value="Card">Card</option>
+      <option value="Bank Transfer">Bank Transfer</option>
+    </select>
+  </div>
+
+  <div class="actions">
+    <button class="save" onclick="savePayment()">Save Payment</button>
+    <button class="back" onclick="history.back()">Cancel</button>
+  </div>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyD80rGSiaQD5PiFQfZokB7QueEEyORD57w",
+  authDomain: "new-customer-e3c48.firebaseapp.com",
+  databaseURL: "https://new-customer-e3c48-default-rtdb.firebaseio.com",
+  projectId: "new-customer-e3c48"
+});
+
+const params = new URLSearchParams(window.location.search);
+const boxno = params.get("boxno");
+
+const info = document.getElementById("info");
+const totalEl = document.getElementById("total");
+const paidEl = document.getElementById("paid");
+const balEl = document.getElementById("balance");
+
+document.getElementById("payMonth").value =
+  new Date().toISOString().slice(0,7);
+
+let customerId=null, monthly=0, joining="", paid=0, total=0;
+
+function monthsFrom(j){
+  const s=new Date(j), n=new Date();
+  return (n.getFullYear()-s.getFullYear())*12+(n.getMonth()-s.getMonth())+1;
+}
+
+/* Load customer */
+firebase.database().ref("customers")
+.orderByChild("boxno").equalTo(boxno)
+.once("value",snap=>{
+  snap.forEach(ch=>{
+    customerId=ch.key;
+    const c=ch.val();
+
+    monthly=Number(c.amount);
+    joining=c.joiningMonth;
+    paid=Number(c.paid||0);
+
+    total=monthsFrom(joining)*monthly;
+    const bal=total-paid;
+
+    info.innerHTML=`
+      <strong>${c.name}</strong><br>
+      Box No: ${c.boxno}<br>
+      Joining: ${joining}
+    `;
+
+    totalEl.textContent="₹"+total;
+    paidEl.textContent="₹"+paid;
+    balEl.textContent="₹"+bal;
+  });
+});
+
+/* Save Payment + History */
+function savePayment(){
+  const amt=Number(payAmount.value);
+  const mode=payMode.value;
+  const month=payMonth.value;
+
+  if(!amt||amt<=0) return alert("Enter valid amount");
+  if(!mode) return alert("Select payment mode");
+
+  const newPaid=paid+amt;
+
+  const paymentData={
+    boxno: boxno,
+    amount: amt,
+    paymentMode: mode,
+    paymentMonth: month,
+    paymentDate: new Date().toISOString().slice(0,10)
+  };
+
+  firebase.database().ref("customers/"+customerId).update({paid:newPaid});
+  firebase.database().ref("payments").push(paymentData)
+  .then(()=>{
+    alert("Payment saved successfully");
+    location.href="customer1.html";
+  });
+  const customerPayments = payments
+  .filter(p => p.boxno === c.boxno)
+  .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
+
+const lastPay = customerPayments[0] || {};
+
+}
+</script>
+
+</body>
+</html>

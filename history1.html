@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Monthly Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<style>
+:root{
+  --primary:#9b1c1c;
+  --bg:#f6eeee;
+  --card:#ffffff;
+  --success:#16a34a;
+  --danger:#dc2626;
+  --muted:#6b7280;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Poppins;
+  background:var(--bg);
+}
+
+.app{
+  max-width:430px;
+  margin:auto;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+/* HEADER */
+.header{
+  background:var(--primary);
+  color:#fff;
+  padding:18px 16px;
+}
+.header h1{
+  margin:0;
+  font-size:18px;
+}
+.header .area{
+  font-size:13px;
+  margin-top:4px;
+  opacity:.9;
+}
+.header input{
+  margin-top:10px;
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:12px;
+  font-size:14px;
+}
+
+/* SUMMARY */
+.summary{
+  padding:14px;
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+.card{
+  background:#fff;
+  border-radius:16px;
+  padding:14px;
+  box-shadow:0 8px 24px rgba(0,0,0,.12);
+}
+.card span{
+  font-size:12px;
+  color:var(--muted);
+}
+.card strong{
+  display:block;
+  margin-top:6px;
+  font-size:18px;
+}
+
+/* LIST */
+.list{
+  flex:1;
+  padding:14px;
+}
+.customer{
+  background:#fff;
+  border-radius:18px;
+  padding:14px;
+  margin-bottom:14px;
+  box-shadow:0 10px 26px rgba(0,0,0,.12);
+}
+.customer-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.customer-header h3{
+  margin:0;
+  font-size:15px;
+}
+.badge{
+  font-size:11px;
+  padding:5px 10px;
+  border-radius:20px;
+  color:#fff;
+  font-weight:600;
+}
+.paid{background:var(--success)}
+.due{background:var(--danger)}
+
+.customer-info{
+  font-size:13px;
+  margin-top:8px;
+  line-height:1.6;
+}
+
+.amounts{
+  display:flex;
+  justify-content:space-between;
+  margin-top:10px;
+}
+.amount{text-align:center}
+.amount span{
+  font-size:11px;
+  color:var(--muted);
+}
+.amount strong{font-size:14px}
+
+/* NAV */
+.nav{
+  display:flex;
+  background:#fff;
+  border-top:1px solid #ddd;
+}
+.nav button{
+  flex:1;
+  border:none;
+  padding:14px;
+  background:none;
+  font-size:14px;
+}
+.nav button.active{
+  color:var(--primary);
+  font-weight:600;
+}
+
+.empty{
+  text-align:center;
+  color:#777;
+  margin-top:40px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- HEADER -->
+<div class="header">
+  <h1>📅 Monthly Report</h1>
+  <div class="area">Area : <b id="areaText"></b></div>
+  <input type="month" id="month" onchange="loadReport()">
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button onclick="location.href='home1.html'">🏠 Home</button>
+  <!-- <button class="active">📊 Report</button> -->
+</div>
+
+<!-- SUMMARY -->
+<div class="summary">
+  <div class="card">
+    <span>Total</span>
+    <strong id="totalAmount">₹0</strong>
+  </div>
+  <div class="card">
+    <span>Paid</span>
+    <strong id="paidAmount">₹0</strong>
+  </div>
+  <div class="card">
+    <span>Balance</span>
+    <strong id="balanceAmount">₹0</strong>
+  </div>
+  <div class="card">
+    <span>Customers</span>
+    <strong id="customerCount">0</strong>
+  </div>
+</div>
+
+<!-- LIST -->
+<div class="list" id="list"></div>
+
+</div>
+
+<script>
+/* 🔐 LOGIN CHECK */
+if(!localStorage.getItem("loggedIn")){
+  swal("Session Expired","Please login again","warning")
+    .then(()=>location.href="login1.html");
+}
+
+/* 🌍 USER AREA */
+const userArea = localStorage.getItem("userArea");
+if(!userArea){
+  swal("Area Missing","Login area not found","error")
+    .then(()=>location.href="login1.html");
+}
+
+document.getElementById("areaText").innerText = userArea;
+
+/* FIREBASE */
+firebase.initializeApp({
+  apiKey: "AIzaSyD80rGSiaQD5PiFQfZokB7QueEEyORD57w",
+  databaseURL: "https://new-customer-e3c48-default-rtdb.firebaseio.com"
+});
+
+const ref = firebase.database().ref("customers");
+const list = document.getElementById("list");
+
+/* MONTH DIFFERENCE */
+function monthDiff(start,end){
+  const s=new Date(start), e=new Date(end);
+  return (e.getFullYear()-s.getFullYear())*12+(e.getMonth()-s.getMonth())+1;
+}
+
+/* LOAD REPORT */
+function loadReport(){
+  const m = month.value;
+  if(!m) return;
+
+  let TOTAL=0, PAID=0, COUNT=0;
+  list.innerHTML="";
+
+  ref.once("value", snap=>{
+    let found=false;
+
+    snap.forEach(ch=>{
+      const c = ch.val();
+
+      if(c.status==="inactive") return;
+      if(c.center !== userArea) return;      // ✅ AREA FILTER
+      if(c.joiningMonth > m) return;
+
+      found=true;
+
+      const months = monthDiff(c.joiningMonth,m);
+      const total  = months * Number(c.amount);
+      const paid   = Number(c.paid || 0);
+      const bal    = total - paid;
+
+      TOTAL += total;
+      PAID  += paid;
+      COUNT++;
+
+      list.innerHTML += `
+        <div class="customer">
+          <div class="customer-header">
+            <h3>${c.name}</h3>
+            <span class="badge ${bal<=0?'paid':'due'}">
+              ${bal<=0?'PAID':'DUE'}
+            </span>
+          </div>
+
+          <div class="customer-info">
+            📦 Box: <b>${c.boxno}</b><br>
+            📍 Area: ${c.center}<br>
+            📅 Joined: ${c.joiningMonth}
+          </div>
+
+          <div class="amounts">
+            <div class="amount">
+              <span>Total</span>
+              <strong>₹${total}</strong>
+            </div>
+            <div class="amount">
+              <span>Paid</span>
+              <strong>₹${paid}</strong>
+            </div>
+            <div class="amount">
+              <span>Balance</span>
+              <strong>₹${bal}</strong>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    if(!found){
+      list.innerHTML = `<div class="empty">No records for ${userArea}</div>`;
+    }
+
+    totalAmount.innerText = "₹"+TOTAL;
+    paidAmount.innerText = "₹"+PAID;
+    balanceAmount.innerText = "₹"+(TOTAL-PAID);
+    customerCount.innerText = COUNT;
+  });
+}
+
+/* DEFAULT MONTH */
+month.value = new Date().toISOString().slice(0,7);
+loadReport();
+</script>
+
+</body>
+</html>

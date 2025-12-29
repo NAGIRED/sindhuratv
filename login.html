@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sindhura TV – Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter;
+  background:linear-gradient(135deg,#9b1c1c,#4b0f0f);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.login-card{
+  background:#fff;
+  width:100%;
+  max-width:420px;
+  padding:36px;
+  border-radius:22px;
+  box-shadow:0 30px 60px rgba(0,0,0,.25);
+  text-align:center;
+}
+
+.logo{
+  width:80px;
+  height:80px;
+  background:#9b1c1c;
+  color:#fff;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:34px;
+  margin:0 auto 16px;
+}
+
+h1{
+  margin:10px 0 6px;
+  font-size:24px;
+}
+
+p{
+  margin:0 0 26px;
+  color:#666;
+  font-size:14px;
+}
+
+.input{
+  width:100%;
+  padding:14px 18px;
+  margin-bottom:14px;
+  border-radius:14px;
+  border:1px solid #ddd;
+  font-size:15px;
+}
+
+.input:focus{
+  outline:none;
+  border-color:#9b1c1c;
+}
+
+button{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:16px;
+  background:#9b1c1c;
+  color:#fff;
+  font-size:16px;
+  font-weight:600;
+  cursor:pointer;
+  margin-top:10px;
+}
+
+button:hover{
+  background:#7a1414;
+}
+
+.error{
+  margin-top:14px;
+  color:#b91c1c;
+  font-size:14px;
+  display:none;
+}
+
+.footer{
+  margin-top:22px;
+  font-size:13px;
+  color:#777;
+}
+</style>
+</head>
+
+<body>
+
+<div class="login-card">
+  <div class="logo">📺</div>
+  <h1>Sindhura TV</h1>
+  <p>Admin Login</p>
+
+  <input id="email" class="input" type="email" placeholder="Email">
+  <input id="password" class="input" type="password" placeholder="Password">
+
+  <button onclick="login()">Login</button>
+
+  <div id="error" class="error">Invalid email or password</div>
+
+  <div class="footer">
+    © 2025 Sindhura TV Network
+  </div>
+</div>
+
+<script>
+function login(){
+  const email = document.getElementById("email").value.trim();
+  const pass  = document.getElementById("password").value.trim();
+
+  const ADMIN_EMAIL = "srinu@gmail.com";
+  const ADMIN_PASS  = "srinu@123";
+
+  if(!email || !pass){
+    swal("Missing Fields", "Please enter email and password", "warning");
+    return;
+  }
+
+  // Loading alert
+  swal({
+    title: "Checking...",
+    text: "Please wait",
+    buttons: false,
+    closeOnClickOutside: false,
+    closeOnEsc: false
+  });
+
+  setTimeout(() => {
+    if(email === ADMIN_EMAIL && pass === ADMIN_PASS){
+
+      localStorage.setItem("loggedIn","yes");
+
+      swal({
+        title: "Login Successful 🎉",
+        text: "Welcome to Sindhura TV Admin Panel",
+        icon: "success",
+        button: "Continue"
+      }).then(() => {
+        window.location.href = "home.html";
+      });
+
+    }else{
+      swal("Login Failed ❌", "Invalid email or password", "error");
+    }
+  }, 800);
+}
+</script>
+
+</body>
+</html>

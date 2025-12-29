@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Payment History – Sindhura TV</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<!-- Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Inter;
+  background:#f6eeee;
+}
+.header{
+  background:#9b1c1c;
+  color:#fff;
+  padding:18px;
+  text-align:center;
+  font-size:18px;
+  font-weight:600;
+}
+.actions{
+  text-align:center;
+  margin:12px;
+}
+.actions button{
+  padding:10px 16px;
+  border:none;
+  border-radius:10px;
+  margin:0 6px;
+  cursor:pointer;
+}
+.container{
+  padding:18px;
+  max-width:900px;
+  margin:auto;
+}
+.card{
+  background:#fff;
+  border-radius:18px;
+  padding:16px;
+  box-shadow:0 12px 30px rgba(0,0,0,.08);
+  margin-bottom:16px;
+}
+.card h3{
+  margin:0 0 6px;
+}
+.meta{
+  font-size:13px;
+  color:#555;
+  line-height:1.6;
+}
+.amount{
+  margin-top:10px;
+  font-size:18px;
+  font-weight:700;
+  color:#166534;
+}
+.badge{
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:12px;
+}
+.cash{background:#dcfce7}
+.upi{background:#e0f2fe}
+.cardpay{background:#ede9fe}
+.bank{background:#fff7ed}
+.empty{
+  text-align:center;
+  color:#6b7280;
+  margin-top:40px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">📜 Payment History</div>
+
+<div class="actions">
+  <button onclick="downloadExcel()">⬇ Excel</button>
+  <button onclick="downloadPDF()">⬇ PDF</button>
+</div>
+
+<div class="container" id="list">
+  <p class="empty">Loading payments...</p>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyD80rGSiaQD5PiFQfZokB7QueEEyORD57w",
+  databaseURL:"https://new-customer-e3c48-default-rtdb.firebaseio.com"
+});
+
+const params = new URLSearchParams(location.search);
+const boxno = String(params.get("boxno"));
+const list = document.getElementById("list");
+
+let exportData = [];
+
+/* LOAD ALL PAYMENTS */
+firebase.database().ref("payments")
+.on("value", snap => {
+
+  list.innerHTML="";
+  exportData=[];
+
+  if(!snap.exists()){
+    list.innerHTML=`<p class="empty">No payments found</p>`;
+    return;
+  }
+
+  const payments=[];
+
+  snap.forEach(ch=>{
+    const p=ch.val();
+    if(String(p.boxno)===boxno){
+      payments.push(p);
+    }
+  });
+
+  if(!payments.length){
+    list.innerHTML=`<p class="empty">No payment history</p>`;
+    return;
+  }
+
+  payments.sort((a,b)=>new Date(b.paymentDate)-new Date(a.paymentDate));
+
+  payments.forEach(p=>{
+
+    exportData.push({
+      BoxNo:p.boxno,
+      Amount:p.amount,
+      PaymentMonth:p.paymentMonth,
+      PaymentDate:p.paymentDate,
+      PaymentMode:p.paymentMode
+    });
+
+    let cls="cash";
+    if(p.paymentMode==="UPI") cls="upi";
+    if(p.paymentMode==="Card") cls="cardpay";
+    if(p.paymentMode==="Bank Transfer") cls="bank";
+
+    list.innerHTML+=`
+      <div class="card">
+        <h3>Box No: ${p.boxno}</h3>
+        <div class="meta">
+          📅 Date: ${p.paymentDate}<br>
+          🗓 Month: ${p.paymentMonth}<br>
+          💳 Mode: <span class="badge ${cls}">${p.paymentMode}</span>
+        </div>
+        <div class="amount">₹${p.amount}</div>
+      </div>
+    `;
+  });
+});
+
+/* EXCEL */
+function downloadExcel(){
+  if(!exportData.length) return alert("No data");
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.json_to_sheet(exportData);
+  XLSX.utils.book_append_sheet(wb,ws,"Payment History");
+  XLSX.writeFile(wb,"Payment_History_"+boxno+".xlsx");
+}
+
+/* PDF */
+function downloadPDF(){
+  if(!exportData.length) return alert("No data");
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+
+  doc.text("Sindhura TV - Payment History",14,10);
+  doc.text("Box No: "+boxno,14,18);
+
+  doc.autoTable({
+    startY:22,
+    head:[["Box","Amount","Month","Date","Mode"]],
+    body:exportData.map(p=>[
+      p.BoxNo,
+      "₹"+p.Amount,
+      p.PaymentMonth,
+      p.PaymentDate,
+      p.PaymentMode
+    ])
+  });
+
+  doc.save("Payment_History_"+boxno+".pdf");
+}
+</script>
+
+</body>
+</html>

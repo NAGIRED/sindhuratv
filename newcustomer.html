@@ -1,0 +1,373 @@
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sindhura TV – Add Customer</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+  <style>
+  :root{
+    --primary:#9b1c1c;
+    --primary-dark:#7a1414;
+    --bg:#f6eeee;
+    --card:#ffffff;
+    --border:#e5e7eb;
+    --text:#1f2937;
+    --muted:#6b7280;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter,system-ui;
+    background:var(--bg);
+    color:var(--text);
+  }
+  .app{
+    display:grid;
+    grid-template-columns:260px 1fr;
+    min-height:100vh;
+  }
+
+  /* ================= SIDEBAR ================= */
+  .sidebar{
+    background:linear-gradient(180deg,var(--primary),var(--primary-dark));
+    color:#fff;
+    padding:26px 22px;
+  }
+  .sidebar h1{
+    margin:0 0 30px;
+    font-size:22px;
+  }
+  .sidebar button{
+    width:100%;
+    margin-bottom:12px;
+    padding:14px 18px;
+    border:none;
+    border-radius:14px;
+    background:rgba(255,255,255,.15);
+    color:#fff;
+    font-size:14px;
+    text-align:left;
+    cursor:pointer;
+    transition:.25s;
+  }
+  .sidebar button:hover{
+    background:rgba(255,255,255,.25);
+  }
+
+  /* ================= MAIN ================= */
+  .main{
+    padding:40px;
+  }
+
+  /* ================= CARD ================= */
+  .card{
+    max-width:900px;
+    background:rgba(255,255,255,.95);
+    backdrop-filter:blur(8px);
+    border-radius:26px;
+    padding:36px;
+    box-shadow:0 18px 45px rgba(0,0,0,.15);
+  }
+  .card h2{
+    margin:0 0 6px;
+  }
+  .card p{
+    margin:0 0 26px;
+    color:var(--muted);
+    font-size:14px;
+  }
+
+  /* ================= FORM ================= */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:18px 22px;
+  }
+  label{
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:6px;
+    display:block;
+  }
+  input,textarea{
+    width:100%;
+    padding:14px 16px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    font-size:14px;
+    transition:.25s;
+  }
+  input:focus,textarea:focus{
+    border-color:var(--primary);
+    outline:none;
+    box-shadow:0 0 0 3px rgba(155,28,28,.12);
+  }
+  textarea{
+    resize:none;
+    height:90px;
+  }
+  .full{grid-column:span 2}
+
+  /* ================= ACTIONS ================= */
+  .actions{
+    margin-top:28px;
+    display:flex;
+    gap:16px;
+  }
+  button.save{
+    background:var(--primary);
+    color:#fff;
+    padding:14px 34px;
+    border:none;
+    border-radius:16px;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  button.save:hover{
+    background:var(--primary-dark);
+  }
+  button.back{
+    background:#f3f4f6;
+    padding:14px 34px;
+    border:none;
+    border-radius:16px;
+    font-size:15px;
+    cursor:pointer;
+  }
+
+  /* ================= RESPONSIVE ================= */
+  @media(max-width:900px){
+    .app{grid-template-columns:1fr}
+    .sidebar{display:none}
+  }
+  @media(max-width:720px){
+    .grid{grid-template-columns:1fr}
+    .full{grid-column:span 1}
+    .actions{flex-direction:column}
+  }
+  select{
+    width:100%;
+    padding:14px 16px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    font-size:14px;
+    background:#fff;
+    transition:.25s;
+  }
+  select:focus{
+    border-color:var(--primary);
+    outline:none;
+    box-shadow:0 0 0 3px rgba(155,28,28,.12);
+  }
+
+  .logout{
+  margin-top:30px;
+  background:rgba(0,0,0,.25) !important;
+  border:1px solid rgba(255,255,255,.3);
+}
+
+.logout:hover{
+  background:#dc2626 !important;
+}
+
+  </style>
+  </head>
+
+  <body>
+
+  <div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <h1>Sindhura TV</h1>
+    <button onclick="go('home.html')">📊 Dashboard</button>
+    <button onclick="go('newcustomer.html')">➕ Add Customer</button>
+    <button onclick="go('customer.html')">👥 Customers</button>
+    <button onclick="go('payment.html')">💳 Payments</button>
+    <button onclick="go('history.html')">📜 History</button>
+    <button class="settings" onclick="go('bill-settings.html')">
+        ⚙️ <span>Settings</span>
+      </button>
+       <button class="logout" onclick="logout()">🚪 Logout</button>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main">
+
+  <div class="card">
+    <h2>➕ Add New Customer</h2>
+    <p>Enter customer details to start monthly billing</p>
+
+    <form onsubmit="saveCustomer(event)">
+      <div class="grid">
+
+        <div>
+          <label>Customer Name</label>
+          <input required id="name" placeholder="Full name">
+        </div>
+
+        <div>
+          <label>Box Number</label>
+          <input required id="boxno" placeholder="STB Number">
+        </div>
+
+        <div class="full">
+          <label>Address</label>
+          <textarea required id="address" placeholder="House / Street / Area"></textarea>
+        </div>
+
+        <div>
+          <label>Mobile Number</label>
+          <input pattern="[0-9]{10}" required id="mobile" placeholder="10 digit number">
+        </div>
+
+      <div>
+    <label>Area</label>
+    <select id="center" required>
+      <option value="">Select Area</option>
+      <option value="Area 1">Area 1</option>
+      <option value="Area 2">Area 2</option>
+      <option value="Area 3">Area 3</option>
+    </select>
+  </div>
+
+
+        <div>
+          <label>Monthly Amount (₹)</label>
+          <input type="number" required id="amount">
+        </div>
+
+        <div>
+          <label>Joining Month</label>
+          <input type="month" required id="joiningMonth">
+        </div>
+
+      </div>
+
+      <div class="actions">
+        <button class="save">💾 Save Customer</button>
+        <button type="button" class="back" onclick="go('customer.html')">← Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  </main>
+  </div>
+
+  <script>
+  function go(page){
+    window.location.href = page;
+  }
+
+  /* ================= FIREBASE ================= */
+  firebase.initializeApp({
+    apiKey: "AIzaSyD80rGSiaQD5PiFQfZokB7QueEEyORD57w",
+    authDomain: "new-customer-e3c48.firebaseapp.com",
+    databaseURL: "https://new-customer-e3c48-default-rtdb.firebaseio.com",
+    projectId: "new-customer-e3c48"
+  });
+
+  const customersRef = firebase.database().ref("customers");
+
+  /* ================= SAVE CUSTOMER ================= */
+  async function saveCustomer(e){
+    e.preventDefault();
+
+    // ✅ FIXED INPUT REFERENCES
+    const nameEl = document.getElementById("name");
+    const boxEl = document.getElementById("boxno");
+    const addressEl = document.getElementById("address");
+    const mobileEl = document.getElementById("mobile");
+    const centerEl = document.getElementById("center");
+    const amountEl = document.getElementById("amount");
+    const joinEl = document.getElementById("joiningMonth");
+
+    const data = {
+      name: nameEl.value.trim(),
+      boxno: boxEl.value.trim(),
+      address: addressEl.value.trim(),
+      mobile: mobileEl.value.trim(),
+      center: centerEl.value.trim(),
+      amount: Number(amountEl.value),
+      joiningMonth: joinEl.value,
+      paid: 0,
+      createdAt: Date.now()
+    };
+
+    if(!data.name || !data.boxno){
+      alert("❌ Please fill all fields");
+      return;
+    }
+
+    // ✅ DUPLICATE BOX CHECK
+    const snap = await customersRef
+      .orderByChild("boxno")
+      .equalTo(data.boxno)
+      .once("value");
+
+    if(snap.exists()){
+      alert("❌ Box number already exists");
+      return;
+    }
+
+    // ✅ SAVE
+  customersRef.push(data, err => {
+    if (err) {
+      swal({
+        title: "Error ❌",
+        text: "Customer not saved. Please try again.",
+        icon: "error",
+        button: "OK",
+      });
+    } else {
+      swal({
+        title: "Success ✅",
+        text: "Customer added successfully!",
+        icon: "success",
+        button: "Go to Customers",
+      }).then(() => {
+        go('customer.html');
+      });
+    }
+  });
+  }
+  </script>
+  <script>
+function go(page){
+  window.location.href = page;
+}
+
+function logout(){
+  swal({
+    title: "Logout Confirmation",
+    text: "Do you really want to logout?",
+    icon: "warning",
+    buttons: ["Cancel", "Logout"],
+    dangerMode: true,
+  }).then((willLogout) => {
+    if (willLogout) {
+      localStorage.removeItem("loggedIn");
+
+      swal({
+        title: "Logged Out ✅",
+        text: "You have been logged out successfully",
+        icon: "success",
+        button: "OK",
+      }).then(() => {
+        window.location.href = "login.html";
+      });
+    }
+  });
+}
+</script>
+
+  </body>
+  </html>

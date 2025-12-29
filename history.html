@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sindhura TV – Monthly Report</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<!-- Sweet Alert -->
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+<!-- Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+:root{
+  --primary:#9b1c1c;
+  --primary-dark:#7a1414;
+  --bg:#f6eeee;
+  --card:#ffffff;
+  --border:#e5e7eb;
+  --text:#1f2937;
+  --muted:#6b7280;
+  --success:#16a34a;
+  --danger:#dc2626;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter;
+  background:var(--bg);
+}
+.app{
+  display:grid;
+  grid-template-columns:260px 1fr;
+  min-height:100vh;
+}
+
+/* SIDEBAR */
+.sidebar{
+  background:linear-gradient(180deg,var(--primary),var(--primary-dark));
+  color:#fff;
+  padding:26px;
+}
+.sidebar h1{margin-bottom:30px}
+.sidebar button{
+  width:100%;
+  margin-bottom:12px;
+  padding:14px;
+  border:none;
+  border-radius:14px;
+  background:rgba(255,255,255,.15);
+  color:#fff;
+  text-align:left;
+  cursor:pointer;
+}
+
+/* MAIN */
+.main{padding:30px}
+
+/* HEADER */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+.header h2{margin:0}
+.header input{
+  padding:10px 14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+}
+
+/* CARDS */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:18px;
+  margin-bottom:26px;
+}
+.card{
+  background:var(--card);
+  padding:22px;
+  border-radius:20px;
+  box-shadow:0 12px 30px rgba(0,0,0,.08);
+}
+.card h4{
+  margin:0;
+  font-size:13px;
+  color:var(--muted);
+}
+.card p{
+  margin-top:8px;
+  font-size:22px;
+  font-weight:700;
+}
+
+/* TABLE */
+.table-wrap{
+  background:#fff;
+  border-radius:22px;
+  overflow:hidden;
+  box-shadow:0 14px 30px rgba(0,0,0,.08);
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  padding:14px 16px;
+  font-size:14px;
+}
+thead{
+  background:#f3d6d6;
+}
+th{color:#7a1414;text-align:left}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border:none}
+
+/* STATUS */
+.badge{
+  padding:6px 14px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:600;
+}
+.paid{background:#dcfce7;color:#166534}
+.due{background:#fee2e2;color:#991b1b}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .cards{grid-template-columns:repeat(2,1fr)}
+}
+.logout{
+  margin-top:30px;
+  background:rgba(0,0,0,.25) !important;
+  border:1px solid rgba(255,255,255,.3);
+}
+
+.logout:hover{
+  background:#dc2626 !important;
+}
+.tabs{display:flex;gap:10px;margin-bottom:14px}
+.tabs button{
+  padding:10px 18px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#fff;
+  cursor:pointer;
+}
+.tabs button.active{background:var(--primary);color:#fff}
+
+/* Toolbar */
+.toolbar{display:flex;gap:12px;margin-bottom:16px}
+.toolbar input,.toolbar select{
+  padding:12px 16px;
+  border-radius:12px;
+  border:1px solid var(--border);
+}
+button,input,select{
+  padding:10px 14px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  cursor:pointer
+} 
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <h1>Sindhura TV</h1>
+  <button onclick="go('home.html')">📊 Dashboard</button>
+  <button onclick="go('newcustomer.html')">➕ Add Customer</button>
+  <button onclick="go('customer.html')">👥 Customers</button>
+  <button onclick="go('payment.html')">💳 Payments</button>
+  <button onclick="go('history.html')">📜 History</button>
+  <button class="settings" onclick="go('bill-settings.html')">
+      ⚙️ <span>Settings</span>
+    </button>
+     <button class="logout" onclick="logout()">🚪 Logout</button>
+</aside>
+
+<div class="main">
+<div class="header">
+  <h2>📅 Monthly Report</h2>
+  <input type="month" id="reportMonth" onchange="loadReport()">
+</div>
+
+
+<section class="cards">
+  <div class="card">
+    <h4>Total Amount</h4>
+    <p id="totalAmount">₹0</p>
+  </div>
+  <div class="card">
+    <h4>Paid Amount</h4>
+    <p id="paidAmount">₹0</p>
+  </div>
+  <div class="card">
+    <h4>Balance Amount</h4>
+    <p id="balanceAmount">₹0</p>
+  </div>
+  <div class="card">
+    <h4>Customers</h4>
+    <p id="customerCount">0</p>
+  </div>
+</section>
+<div class="toolbar">
+  <select id="areaFilter" onchange="loadReport()">
+    <option value="all">All Areas</option>
+    <option value="Area 1">Area 1</option>
+    <option value="Area 2">Area 2</option>
+    <option value="Area 3">Area 3</option>
+  </select>
+
+  <button onclick="downloadExcel()">⬇ Excel</button>
+  <button onclick="downloadPDF()">⬇ PDF</button>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>Name</th>
+  <th>Mobile</th>
+  <th>Box No</th>
+  <th>Area</th>
+  <th>Joining</th>
+  <th>Monthly</th>
+  <th>Total</th>
+  <th>Paid</th>
+  <th>Balance</th>
+  <th>Payment Date</th>
+  <th>Payment Mode</th>
+  <th>Status</th>
+   <th>History</th>
+</tr>
+
+</thead>
+
+<tbody id="rows"></tbody>
+</table>
+
+</div>
+</div>
+<script>
+/* FIREBASE */
+firebase.initializeApp({
+  apiKey:"AIzaSyD80rGSiaQD5PiFQfZokB7QueEEyORD57w",
+  databaseURL:"https://new-customer-e3c48-default-rtdb.firebaseio.com"
+});
+
+const customersRef = firebase.database().ref("customers");
+const paymentsRef  = firebase.database().ref("payments");
+
+let reportData = [];
+let areaSummary = {};
+
+function monthDiff(s,e){
+  const a=new Date(s),b=new Date(e);
+  return (b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth())+1;
+}
+
+async function loadReport(){
+  const month = reportMonth.value;
+  const areaSel = areaFilter.value;
+  if(!month) return;
+
+  rows.innerHTML="";
+  reportData=[];
+  areaSummary={};
+
+  let TOTAL=0, PAID=0, COUNT=0;
+
+  const paymentsSnap = await paymentsRef.once("value");
+  const payments = [];
+
+  paymentsSnap.forEach(p=>{
+    payments.push(p.val());
+  });
+
+  customersRef.once("value",snap=>{
+    snap.forEach(ch=>{
+      const c = ch.val();
+      if(c.joiningMonth > month) return;
+      if(areaSel!=="all" && c.center!==areaSel) return;
+
+      const months = monthDiff(c.joiningMonth, month);
+      const total  = months * Number(c.amount||0);
+
+      // 🔎 Find last payment
+      const customerPayments = payments.filter(p=>p.boxno===c.boxno);
+      const paid = customerPayments.reduce((s,p)=>s+Number(p.amount||0),0);
+      const lastPay = customerPayments.slice(-1)[0] || {};
+
+      const bal = total - paid;
+
+      TOTAL += total;
+      PAID  += paid;
+      COUNT++;
+
+      if(!areaSummary[c.center]){
+        areaSummary[c.center]={total:0,paid:0,balance:0};
+      }
+
+      areaSummary[c.center].total += total;
+      areaSummary[c.center].paid  += paid;
+      areaSummary[c.center].balance += bal;
+
+      reportData.push({
+        Name: c.name,
+        Box: c.boxno,
+        Area: c.center,
+        Total: total,
+        Paid: paid,
+        Balance: bal,
+        PaymentDate: lastPay.paymentDate || "",
+        PaymentMode: lastPay.paymentMode || ""
+      });
+
+      rows.innerHTML += `
+        <tr>
+           <tr>
+        <td>${c.name}</td>
+        <td>${c.mobile || "-"}</td>
+        <td>${c.boxno}</td>
+        <td>${c.center}</td>
+        <td>${c.joiningMonth}</td>
+        <td>₹${c.amount}</td>
+        <td>₹${total}</td>
+        <td>₹${paid}</td>
+        <td>₹${bal}</td>
+       <td>${lastPay.paymentMonth || "-"}</td> <td>${lastPay.paymentMode || "-"}</td>
+        <td>
+          <span class="badge ${bal<=0?'paid':'due'}">
+            ${bal<=0?'PAID':'DUE'}
+          </span>
+        </td>
+        <td>  <button onclick="go('payment-history.html?boxno=${c.boxno}')">📜</button> </td>
+          
+</td>
+        </tr>`;
+    });
+
+    totalAmount.innerText = "₹"+TOTAL;
+    paidAmount.innerText  = "₹"+PAID;
+    balanceAmount.innerText = "₹"+(TOTAL-PAID);
+    customerCount.innerText = COUNT;
+  });
+}
+
+/* EXCEL */
+function downloadExcel(){
+  if(!reportData.length) return swal("No data");
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.json_to_sheet(reportData),
+    "Monthly Report"
+  );
+
+  const areaRows = Object.entries(areaSummary).map(a=>({
+    Area:a[0],
+    Total:a[1].total,
+    Paid:a[1].paid,
+    Balance:a[1].balance
+  }));
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.json_to_sheet(areaRows),
+    "Area Summary"
+  );
+
+  XLSX.writeFile(wb,"Monthly_Report.xlsx");
+}
+
+/* PDF */
+function downloadPDF(){
+  if(!reportData.length) return swal("No data");
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF("landscape");
+
+  doc.text("Sindhura TV – Monthly Report",14,10);
+  doc.autoTable({
+    startY:14,
+    head:[Object.keys(reportData[0])],
+    body:reportData.map(o=>Object.values(o))
+  });
+
+  doc.addPage();
+  doc.text("Area Summary",14,10);
+  doc.autoTable({
+    startY:14,
+    head:[["Area","Total","Paid","Balance"]],
+    body:Object.entries(areaSummary).map(a=>[
+      a[0],a[1].total,a[1].paid,a[1].balance
+    ])
+  });
+
+  doc.save("Monthly_Report.pdf");
+}
+
+/* INIT */
+reportMonth.value = new Date().toISOString().slice(0,7);
+loadReport();
+
+
+function go(page){
+  window.location.href = page;
+}
+</script>
+
+</body>
+</html>

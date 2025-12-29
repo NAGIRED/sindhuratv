@@ -1,0 +1,291 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bill Settings – Company Details</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+<style>
+    :root{
+  --primary:#9b1c1c;
+  --success:#16a34a;
+  --warning:#f59e0b;
+  --danger:#dc2626;
+  --bg:#f6eeee;
+  --card:#fff;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter;background:var(--bg)}
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+
+/* Sidebar */
+.sidebar{
+  background:linear-gradient(180deg,#9b1c1c,#7a1414);
+  color:#fff;padding:26px
+}
+.sidebar h1{margin:0 0 30px}
+.sidebar button{
+  width:100%;margin-bottom:12px;
+  padding:14px;border:none;border-radius:14px;
+  background:rgba(255,255,255,.15);
+  color:#fff;font-size:14px;cursor:pointer;
+  text-align:left;
+  
+}
+
+/* Main */
+.main{padding:30px}
+:root{
+  --primary:#9b1c1c;
+  --bg:#f6eeee;
+  --card:#fff;
+  --border:#e5e7eb;
+  --muted:#6b7280;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter;
+  background:var(--bg);
+}
+
+.container{
+  max-width:800px;
+  margin:40px auto;
+  background:var(--card);
+  padding:30px;
+  border-radius:22px;
+  box-shadow:0 20px 45px rgba(0,0,0,.15);
+}
+
+h1{
+  margin:0 0 10px;
+}
+p{
+  margin:0 0 25px;
+  color:var(--muted);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+}
+
+label{
+  font-size:13px;
+  color:var(--muted);
+  display:block;
+  margin-bottom:6px;
+}
+
+input,textarea{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  font-size:14px;
+}
+textarea{resize:none;height:80px}
+
+.full{grid-column:span 2}
+
+.actions{
+  margin-top:26px;
+  display:flex;
+  gap:14px;
+}
+
+button{
+  padding:14px 30px;
+  border:none;
+  border-radius:16px;
+  font-size:15px;
+  cursor:pointer;
+}
+.save{
+  background:var(--primary);
+  color:#fff;
+}
+.back{
+  background:#f3f4f6;
+}
+.logout{
+  margin-top:30px;
+  background:rgba(0,0,0,.25) !important;
+  border:1px solid rgba(255,255,255,.3);
+}
+
+.logout:hover{
+  background:#dc2626 !important;
+}
+</style>
+</head>
+
+<body>
+  <script>
+function go(page){
+  window.location.href = page;
+}
+
+function logout(){
+  swal({
+    title: "Logout Confirmation",
+    text: "Do you really want to logout?",
+    icon: "warning",
+    buttons: ["Cancel", "Logout"],
+    dangerMode: true,
+  }).then((willLogout) => {
+    if (willLogout) {
+      localStorage.removeItem("loggedIn");
+
+      swal({
+        title: "Logged Out ✅",
+        text: "You have been logged out successfully",
+        icon: "success",
+        button: "OK",
+      }).then(() => {
+        window.location.href = "login.html";
+      });
+    }
+  });
+}
+</script>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <h1>Sindhura TV</h1>
+  <button onclick="go('home.html')">📊 Dashboard</button>
+  <button onclick="go('newcustomer.html')">➕ Add Customer</button>
+  <button onclick="go('customer.html')">👥 Customers</button>
+  <button onclick="go('payment.html')">💳 Payments</button>
+  <button onclick="go('history.html')">📜 History</button>
+  <button class="settings" onclick="go('bill-settings.html')">
+      ⚙️ <span>Settings</span>
+    </button>
+     <button class="logout" onclick="logout()">🚪 Logout</button>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+<div class="container">
+  <h1>🏢 Bill Settings</h1>
+  <p>Company details shown on invoices</p>
+
+  <div class="grid">
+
+    <div>
+      <label>Company Name</label>
+      <input id="companyName" placeholder="Sindhura TV Network">
+    </div>
+
+    <div>
+      <label>Phone Number</label>
+      <input id="phone" placeholder="9876543210">
+    </div>
+
+    <div class="full">
+      <label>Company Address</label>
+      <textarea id="address" placeholder="Street, Area, City"></textarea>
+    </div>
+
+    <div>
+      <label>Email</label>
+      <input id="email" placeholder="info@sindhuratv.com">
+    </div>
+
+    <div>
+      <label>GST / Tax (%)</label>
+      <input id="tax" type="number" placeholder="3">
+    </div>
+
+    <div>
+      <label>Bank Name</label>
+      <input id="bank" placeholder="SBI / HDFC">
+    </div>
+
+    <div>
+      <label>Bank Account</label>
+      <input id="account" placeholder="XXXXXXXXXX">
+    </div>
+
+    <div class="full">
+      <label>Footer Note</label>
+      <textarea id="footer" placeholder="Thank you for your business"></textarea>
+    </div>
+
+  </div>
+
+  <div class="actions">
+    <button class="save" onclick="saveSettings()">💾 Save Settings</button>
+    
+  </div>
+</div>
+
+ 
+
+</main>
+</div>
+
+
+
+
+<script>
+/* FIREBASE INIT */
+firebase.initializeApp({
+  apiKey: "AIzaSyD80rGSiaQD5PiFQfZokB7QueEEyORD57w",
+  databaseURL: "https://new-customer-e3c48-default-rtdb.firebaseio.com",
+  projectId: "new-customer-e3c48"
+});
+
+const ref = firebase.database().ref("billSettings");
+
+/* LOAD SETTINGS */
+ref.once("value",snap=>{
+  if(!snap.exists()) return;
+  const d = snap.val();
+  companyName.value = d.companyName || "";
+  phone.value = d.phone || "";
+  address.value = d.address || "";
+  email.value = d.email || "";
+  tax.value = d.tax || "";
+  bank.value = d.bank || "";
+  account.value = d.account || "";
+  footer.value = d.footer || "";
+});
+
+/* SAVE SETTINGS */
+function saveSettings(){
+  const data={
+    companyName:companyName.value,
+    phone:phone.value,
+    address:address.value,
+    email:email.value,
+    tax:Number(tax.value||0),
+    bank:bank.value,
+    account:account.value,
+    footer:footer.value
+  };
+
+  ref.set(data).then(()=>{
+    alert("✅ Bill settings saved");
+  });
+}
+</script>
+<script>
+function go(page){
+  window.location.href = page;
+}
+</script>
+
+
+</body>
+</html>
